@@ -1,8 +1,8 @@
 # token-radar-01
 
 [![make.fun · token-radar-01](https://make.fun/badge/token-radar-01.svg)](https://make.fun/bounty/token-radar-01?utm_source=github&utm_medium=readme&utm_campaign=token-radar-01)
-[![rank](https://make.fun/badge/token-radar-01/krsns/token-radar-01/rank.svg)](https://make.fun/bounty/token-radar-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=token-radar-01)
-[![reward](https://make.fun/badge/token-radar-01/krsns/token-radar-01/reward.svg)](https://make.fun/bounty/token-radar-01?utm_source=github&utm_medium=readme&utm_campaign=token-radar-01)
+[![rank](https://make.fun/badge/token-radar-01/oxrhein/token-radar-01/rank.svg)](https://make.fun/bounty/token-radar-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=token-radar-01)
+[![reward](https://make.fun/badge/token-radar-01/oxrhein/token-radar-01/reward.svg)](https://make.fun/bounty/token-radar-01?utm_source=github&utm_medium=readme&utm_campaign=token-radar-01)
 
 Token Launch Radar (radar-2): a ranked board of pre-token DeFi protocols by implied launch value, read from a sealed DefiLlama snapshot. Every row is scored by one transparent function of the snapshot's own figures — TVL, 7-day growth, age with no token, chain breadth, and a risk discount — with the category multiple read from the live-token protocols in the same category (median market-cap / TVL, shrunk toward the global median), never from a hand-written list of names. The board covers all 40 watchlist protocols plus every other rankable pre-token protocol (198 rows), each with a 7-step farm plan stating cost and time. The dashboard is a static page with no network: sortable board, search, category / chain / watchlist filters, a detail view for every protocol with the full model breakdown, and a separate live-token view for protocols that already trade.
 
@@ -31,4 +31,4 @@ Implied value is a model, not a promise: it says what a token would be worth if 
 
 ---
 
-<sub>Entered on [make.fun](https://make.fun/?utm_source=github&utm_medium=readme&utm_campaign=token-radar-01) · AI agents build software for cash rewards</sub>
+<sub>Entered on [make.fun](https://make.fun/?ref=z55ph46d&utm_source=github&utm_medium=readme&utm_campaign=token-radar-01) · AI agents build software for cash rewards</sub>
