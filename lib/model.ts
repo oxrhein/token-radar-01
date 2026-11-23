@@ -298,13 +298,15 @@ export function multipleFor(p: SnapshotProtocol, comps: Comparables): number {
 
 /** The risk discount and its label, from the snapshot's own figures. */
 export function riskFor(p: SnapshotProtocol, age: number | null, model: ModelConstants): { multiplier: number; label: 'low' | 'medium' | 'high' } {
-  let mult = 1;
-  if (p.change_7d !== null && p.change_7d < -40) mult *= model.risk_drop_40;
-  else if (p.change_7d !== null && p.change_7d < -20) mult *= model.risk_drop_20;
-  if (age !== null && age < model.risk_young_days) mult *= model.risk_young;
-  if (p.chains.length === 1 && p.tvl_usd >= 1_000_000_000) mult *= model.risk_single_chain;
-  const label = mult >= 0.98 ? 'low' : mult >= 0.9 ? 'medium' : 'high';
-  return { multiplier: mult, label };
+  let discount = 1;
+  const drop = p.change_7d;
+  if (drop !== null && drop < -40) discount *= model.risk_drop_40;
+  else if (drop !== null && drop < -20) discount *= model.risk_drop_20;
+  if (age !== null && age < model.risk_young_days) discount *= model.risk_young;
+  const oneChainBig = p.chains.length === 1 && p.tvl_usd >= 1_000_000_000;
+  if (oneChainBig) discount *= model.risk_single_chain;
+  const label = discount >= 0.98 ? 'low' : discount >= 0.9 ? 'medium' : 'high';
+  return { multiplier: discount, label };
 }
 
 /** The five multipliers and the implied value one protocol gets under `model`. */
@@ -316,16 +318,18 @@ export function impliedValue(
 ): { implied: number; comp: number; growthPct: number; growthMult: number; maturityMult: number; breadthMult: number; riskMult: number; riskLabel: 'low' | 'medium' | 'high'; age: number | null } {
   const age = ageDays(asOf, protocol.listed_at);
   const comp = multipleFor(protocol, comps);
-  const rawGrowth = finite(protocol.change_7d, 0);
-  const growthPct = Math.min(model.growth_cap, Math.max(model.growth_floor, rawGrowth));
+  const change = finite(protocol.change_7d, 0);
+  const growthPct = Math.min(model.growth_cap, Math.max(model.growth_floor, change));
   const growthMult = 1 + (growthPct / 100) * model.growth_weight;
-  const ageForModel = age ?? model.unknown_age_days;
-  const maturityMult = model.maturity_floor + (Math.min(Math.max(ageForModel, 0), model.maturity_days) / model.maturity_days) * model.maturity_range;
-  const breadthMult = 1 + Math.min(Math.max(protocol.chains.length - 1, 0), model.breadth_max_chains) * model.breadth_step;
-  const { multiplier: riskMult, label: riskLabel } = riskFor(protocol, age, model);
+  const knownAge = age ?? model.unknown_age_days;
+  const cappedAge = Math.min(Math.max(knownAge, 0), model.maturity_days);
+  const maturityMult = model.maturity_floor + (cappedAge / model.maturity_days) * model.maturity_range;
+  const extraChains = Math.min(Math.max(protocol.chains.length - 1, 0), model.breadth_max_chains);
+  const breadthMult = 1 + extraChains * model.breadth_step;
+  const risk = riskFor(protocol, age, model);
   const base = protocol.tvl_usd * comp;
-  const implied = Math.max(1, Math.round(base * growthMult * maturityMult * breadthMult * riskMult));
-  return { implied, comp, growthPct, growthMult, maturityMult, breadthMult, riskMult, riskLabel, age };
+  const implied = Math.max(1, Math.round(base * growthMult * maturityMult * breadthMult * risk.multiplier));
+  return { implied, comp, growthPct, growthMult, maturityMult, breadthMult, riskMult: risk.multiplier, riskLabel: risk.label, age };
 }
 
 /** The snapshot's protocol by slug. */
