@@ -1,31 +1,39 @@
-// The token radar's model, radar-2: one snapshot of the protocol universe in, one ranked board out.
+// radar-2: the token radar's model. One snapshot of the protocol universe
+// goes in, one ranked board comes out.
 //
-// The board covers every slug in the snapshot's watchlist (the floor, never a ceiling) and every other
-// pre-token protocol the same rule keeps: no token on record, not a versioned pool, not an exchange,
-// and not a wrapped, staked or bridged product of a token that already trades. A protocol is
-// pre-token when its index entry records no token (no market cap, no CoinGecko id, no symbol); the
-// snapshot's live-token protocols are kept apart and shown as the market's own values, never mixed
-// into the ranked board.
+// The board holds every slug on the snapshot's watchlist (the floor, never
+// the ceiling) plus every other pre-token protocol the same rule keeps: no
+// token on record, not a versioned pool, not an exchange, and not a wrapped,
+// staked or bridged product of a token that already trades. A protocol
+// counts as pre-token when its index entry records no token at all — no
+// market cap, no CoinGecko id, no symbol. The snapshot's live-token
+// protocols are kept apart and shown at the market's own values, never
+// mixed into the ranked board.
 //
-// Implied value follows only from the snapshot's own figures, in five factors:
+// Implied value comes only from the snapshot's own figures, in five factors:
 //
-//   comp       = the category's market multiple, read from the snapshot itself: the median
-//                market-cap / TVL of the live-token protocols in the same category, shrunk toward
-//                the global median (three notional protocols at the global value), clamped to
-//                0.05..1.50. A category with no live comparable falls back to the global median.
+//   comp       = the category's market multiple, read from the snapshot
+//                itself: the median market-cap / TVL of the live-token
+//                protocols in the same category, shrunk toward the global
+//                median (three notional protocols at the global value),
+//                clamped to 0.05..1.50. A category with no live comparable
+//                falls back to the global median.
 //   base       = tvl_usd x comp
 //   growth     = clamp(change_7d, -60, 120) per cent
 //   growthMult = 1 + (growth / 100) x GROWTH_WEIGHT
 //   maturity   = 0.6 + min(age_days, 1095) / 1095 x 0.4   (age_days unknown: 365)
 //   breadth    = 1 + min(chains - 1, 4) x 0.03            (more chains, wider distribution)
-//   risk       = a discount, never a boost: -8% when 7-day TVL fell more than 20% (-15% past -40%),
-//                -5% when the protocol is under 90 days old, -3% when a single chain holds $1B+
+//   risk       = a discount, never a boost: -8% when 7-day TVL fell more
+//                than 20% (-15% past -40%), -5% when the protocol is under
+//                90 days old, -3% when a single chain holds $1B+
 //   implied    = max(1, round(base x growthMult x maturity x breadth x risk))
 //
-// No protocol name is ever special-cased: the same function scores every row, and the category
-// multiples are computed from the snapshot at run time, so the same code on a different snapshot
-// reads different multiples. The dashboard recomputes every row from these figures and checks the
-// number board.json carries, so the page's code and the board's data are visibly the same arithmetic.
+// No protocol name is ever special-cased: the same function scores every
+// row, and the category multiples are computed from the snapshot at run
+// time, so the same code on a different snapshot reads different multiples.
+// The dashboard recomputes every row from these figures and checks the
+// number board.json carries, so the page's code and the board's data are
+// visibly the same arithmetic.
 
 /** The snapshot's protocol entry: exactly the ten fields the sealed input carries. */
 export interface SnapshotProtocol {
@@ -52,18 +60,23 @@ export interface Snapshot {
 
 /** The model's constants, as the dashboard states them and the sandbox may change them. */
 export interface ModelConstants {
+  // Growth: how much a 7-day move matters, and where it is clamped.
   growth_weight: number;
   growth_floor: number;
   growth_cap: number;
+  // Maturity: the floor, the range above it, and the days to full maturity.
   maturity_floor: number;
   maturity_range: number;
   maturity_days: number;
   unknown_age_days: number;
+  // Breadth: the step per extra chain, and how many chains count.
   breadth_step: number;
   breadth_max_chains: number;
+  // Category multiple: the floor, the cap, and the shrink toward the global median.
   comp_floor: number;
   comp_cap: number;
   comp_shrink: number;
+  // Risk: the discounts for a sharp drop, a young protocol, and a single-chain pile.
   risk_drop_20: number;
   risk_drop_40: number;
   risk_young_days: number;
