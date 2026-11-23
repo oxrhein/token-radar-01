@@ -211,52 +211,52 @@ export class SnapshotError extends Error {
 
 const DAY_MS = 86_400_000;
 
-/** A finite number, else `fallback`. */
-function finite(value: unknown, fallback: number): number {
-  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+/** A finite number, else `whenMissing`. */
+function finite(n: unknown, whenMissing: number): number {
+  return typeof n === 'number' && Number.isFinite(n) ? n : whenMissing;
 }
 
-/** The median of a non-empty list, or `fallback` when it is empty. */
-function median(values: number[], fallback: number): number {
-  if (values.length === 0) return fallback;
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 1 ? sorted[mid]! : (sorted[mid - 1]! + sorted[mid]!) / 2;
+/** The median of a non-empty list, else `whenEmpty`. */
+function median(list: number[], whenEmpty: number): number {
+  if (list.length === 0) return whenEmpty;
+  const ordered = [...list].sort((a, b) => a - b);
+  const half = Math.floor(ordered.length / 2);
+  return ordered.length % 2 === 1 ? ordered[half]! : (ordered[half - 1]! + ordered[half]!) / 2;
 }
 
-/** A whole day count from `from` to `to`, clamped at zero; null when either date is absent or bad. */
+/** Whole days from `from` to `to`, never below zero; null when a date is missing or bad. */
 export function ageDays(asOf: string, listedAt: string | null): number | null {
   if (listedAt === null) return null;
-  const a = Date.parse(`${asOf}T00:00:00Z`);
-  const b = Date.parse(`${listedAt}T00:00:00Z`);
-  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
-  return Math.max(0, Math.floor((a - b) / DAY_MS));
+  const start = Date.parse(`${asOf}T00:00:00Z`);
+  const listed = Date.parse(`${listedAt}T00:00:00Z`);
+  if (!Number.isFinite(start) || !Number.isFinite(listed)) return null;
+  return Math.max(0, Math.floor((start - listed) / DAY_MS));
 }
 
 /** Whether a protocol records no token at all. */
 export function isPreToken(p: SnapshotProtocol): boolean {
-  return p.mcap_usd === null && p.gecko_id === null && p.symbol === null;
+  return p.symbol === null && p.gecko_id === null && p.mcap_usd === null;
 }
 
 /** DefiLlama's version-marker rule: a name ending in a release is a pool of another protocol. */
-const VERSIONED = /\s(V\d+(\.\d+)?|v\d+(\.\d+)?|\d+\.\d+)$/;
+const VERSIONED = /\s(v\d+(\.\d+)?|V\d+(\.\d+)?|\d+\.\d+)$/;
 
 /** Categories that are a wrapped, staked or bridged product of a token that already trades. */
-const WRAPPED_CATEGORIES = new Set(['Bridge', 'Canonical Bridge', 'Liquid Staking', 'Liquid Restaking', 'Restaked BTC', 'CEX']);
+const WRAPPED_CATEGORIES = new Set(['CEX', 'Restaked BTC', 'Liquid Restaking', 'Liquid Staking', 'Canonical Bridge', 'Bridge']);
 
 /** Whole words in a name that mark a wrapped or staked product. */
-const WRAPPED_WORDS = /\b(wrapped|staked|staking)\b/i;
+const WRAPPED_WORDS = /\b(staking|staked|wrapped)\b/i;
 
 /** Exchange names a protocol name must not begin with. */
-const EXCHANGE_PREFIX = /^(Binance|Coinbase|Bybit|Kraken|Bitget|OKX|Bitfinex|Gemini)\b/i;
+const EXCHANGE_PREFIX = /^(Gemini|Bitfinex|OKX|Bitget|Kraken|Bybit|Coinbase|Binance)\b/i;
 
 /** Whether a protocol is one the board may rank: pre-token, not a versioned pool, not an exchange, and not a wrapped, staked or bridged product of a token that already trades. */
 export function isRankable(p: SnapshotProtocol): boolean {
   if (!isPreToken(p)) return false;
-  if (p.category !== null && WRAPPED_CATEGORIES.has(p.category)) return false;
-  if (VERSIONED.test(p.name)) return false;
   if (WRAPPED_WORDS.test(p.name)) return false;
+  if (VERSIONED.test(p.name)) return false;
   if (EXCHANGE_PREFIX.test(p.name)) return false;
+  if (p.category !== null && WRAPPED_CATEGORIES.has(p.category)) return false;
   return true;
 }
 
